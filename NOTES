@@ -7,3 +7,9 @@ http://www.yqlblog.net/blog/2009/06/02/getting-stock-information-with-yql-and-op
 But see
 
 http://stackoverflow.com/questions/5108399/yahoo-finance-all-currencies-quote-api-documentation
+
+
+Example call
+
+http://download.finance.yahoo.com/d/quotes.csv?s=AMZN&f=snl1j1wvre7e8r6r7
+

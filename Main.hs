@@ -1,4 +1,6 @@
 module Main where
 import YahooQuote
 
-main = putStrLn "hi"
+main = do 
+    r <- fetch "YHOO"
+    print r
