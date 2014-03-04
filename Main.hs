@@ -113,7 +113,7 @@ codes = [
         ("P/E Ratio (Real-time)", "r2"),
         ("P/E Ratio", "r"),
         ("PEG Ratio", "r5"),
-        ("Percebt Change From 52-week High", "k5"),
+        ("Percent Change From 52-week High", "k5"),
         ("Percent Change From 200-day Moving Average", "m6"),
         ("Percent Change From 50-day Moving Average", "m8"),
         ("Percent Change From 52-week Low", "j6"),
