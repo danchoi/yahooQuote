@@ -41,9 +41,7 @@ fetch sym = do
   getResponseBody rsp
 
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
-          intercalate "" allTags
-
-allTags = [v | (k, v) <- codes]
+          (intercalate "" $ map snd codes)
 
 codes = [  
         ("1 yr Target Price", "t8"),
