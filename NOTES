@@ -13,3 +13,7 @@ Example call
 
 http://download.finance.yahoo.com/d/quotes.csv?s=AMZN&f=snl1j1wvre7e8r6r7
 
+
+TODO
+- separate executable for snap webserver
+

@@ -1,19 +1,16 @@
-module Main
+module YahooQuote 
 where
 import Control.Exception 
-import Text.CSV
+import Text.CSV (parseCSV)
 import Data.List (intercalate)
-import Data.Aeson
+import Data.Aeson hiding (json, json')
 import Network.HTTP.Conduit
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
-import System.Environment
 import Options.Applicative
-import Control.Applicative (optional)
 import Database.HDBC
 import Database.HDBC.Sqlite3
 import Control.Monad (when)
-import Data.Maybe (fromMaybe)
 import System.IO
 
 data Options = Options { 
@@ -30,10 +27,22 @@ optionsP = Options
               ))
             <*> switch ( long "use-cache" <> short 'u' <> help "Use local sqlite3 cache" )
 
-main = do
+runCmd :: IO ()
+runCmd = do 
     options <- execParser opts 
-    -- print options
+    json' <- yahooQuote options 
+    B.putStrLn json'
+  where opts = info (helper <*> optionsP)
+          ( fullDesc 
+            <> progDesc "Show JSON info for stock ticker from Yahoo"
+            <> header "yahooQuote - Yahoo financial info"
+          )
+
+
     -- res is a Map
+
+yahooQuote :: Options -> IO B.ByteString
+yahooQuote options = do
     res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
     res' <- if (sqliteCache options) 
@@ -48,20 +57,14 @@ main = do
                       return res''
                   Nothing -> cacheResult dbh (symbol options) (encode res) >> return res
              else return res
-    let json = B.unpack . encode $ res'
-    putStrLn json
-  where opts = info (helper <*> optionsP)
-          ( fullDesc 
-            <> progDesc "Show JSON info for stock ticker from Yahoo"
-            <> header "yahooQuote - Yahoo financial info"
-          )
-        errorMsg e = Map.fromList [("Error", e)]
+    return . encode $ res'
+  where errorMsg e = Map.fromList [("Error", e)]
 
 cacheResult :: IConnection c => c -> String -> B.ByteString -> IO ()
-cacheResult dbh sym json = do
+cacheResult dbh sym json' = do
     run dbh
         "INSERT OR REPLACE INTO tickers (ticker, jsonData) VALUES (?, ?)"
-        [toSql sym, toSql json]
+        [toSql sym, toSql json']
 
     commit dbh
     return ()
@@ -84,7 +87,7 @@ cachedJson dbh sym = do
           case xs of 
               Just xs' -> return $ Map.insert "CACHED" (fromSql timestamp :: String) xs'
               Nothing -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
-      otherwise -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
+      _ -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
 {-
 
   Contemplated errors are
@@ -105,7 +108,7 @@ csv2map _ = error "Empty csv"
 
 string2csv :: String -> Either String [[String]]
 string2csv s = case parseCSV "" s of
-                 Left err -> Left $ "No matching symbol" 
+                 Left _  -> Left $ "No matching symbol" 
                  Right csv -> Right csv
 
 fetch :: String -> Maybe Int -> IO String
@@ -114,6 +117,7 @@ fetch sym t = do
   rsp <- withManager $ httpLbs $ request { responseTimeout = ((* 1000) <$> t) }
   return . B.unpack . responseBody $ rsp
 
+url :: String -> String
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
           (intercalate "" $ map snd codes)
 
@@ -154,6 +158,7 @@ prepDB dbh = do
       
 -- Yahoo stock ticker field codes
 
+codes :: [(String, String)]
 codes = [  
         ("Name", "n"),
         ("Symbol", "s"),
@@ -240,8 +245,9 @@ codes = [
         ("Volume", "v")
        ]
 
+testcsv :: String
 testcsv = "41.16,35.0994,37.9459,41.72,21.87,\"21.87 - 41.72\",\"N/A - N/A\",\"-\",39.70,600,39.70,17247400,39.63,300,39.63,12.587,\"+1.38 - +3.61%\",\"+1.38\",+4.5306,+1.6841,-2.09,+17.76,\"N/A - +3.61%\",\"+3.61%\",+1.38,-,39.79,38.68,\"N/A - N/A\",\"38.68 - 39.79\",\"N/A - N/A\",\"- - +3.61%\",\"N/A\",N/A,0.00,1.206B,1.58,0.37,1.80,1.26,\"N/A\",\"N/A\",   963,215,000,-,N/A,\"N/A - N/A\",\"- - -\",-,N/A,-,39.63,\"N/A - <b>39.63</b>\",\"Mar  4 - <b>39.63</b>\",\"3/4/2014\",535,222,\"4:00pm\",-,N/A,41.166B,\"cn\",\"Yahoo Inc.\",\"-\",38.74,\"N/A\",N/A,30.36,3.34,-5.01%,+12.91%,+4.44%,+81.21%,38.25,-,3.04,24.21,21.25,8.49,-,1.20,\"NasdaqNM\",\"YHOO\",\"&nbsp;===+=+&nbsp;\",-"
 
-testFetch = fetch "YHOO" (Just 5000)
+
 
  
