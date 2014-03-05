@@ -60,8 +60,8 @@ main = do
 cacheResult :: IConnection c => c -> String -> B.ByteString -> IO ()
 cacheResult dbh sym json = do
     run dbh
-        "INSERT OR REPLACE INTO tickers (ticker, jsonData, lastError) VALUES (?, ?, ?)"
-        [toSql sym, toSql json, SqlNull]
+        "INSERT OR REPLACE INTO tickers (ticker, jsonData) VALUES (?, ?)"
+        [toSql sym, toSql json]
 
     commit dbh
     return ()
@@ -143,7 +143,7 @@ prepDB dbh = do
         hPutStrLn stderr "Creating errors database"
         run dbh
             "CREATE table errors ( \
-            \ ticker TEXT NOT NULL UNIQUE, \
+            \ ticker TEXT NOT NULL, \
             \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
             \ error  TEXT \
             \)" []
