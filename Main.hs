@@ -75,6 +75,33 @@ fetch sym t = do
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
           (intercalate "" $ map snd codes)
 
+-- Database
+
+connect :: FilePath -> IO Connection
+connect fp = do
+    dbh <- connectSqlite3 fp
+    prepDB dbh
+    return dbh
+
+
+prepDB :: IConnection conn => conn -> IO ()
+prepDB dbh = do
+    tables <- getTables dbh
+    when (not ("tickers" `elem` tables)) $ do
+        run dbh
+            "CREATE table tickers ( \
+            \ ticker TEXT NOT NULL UNIQUE, \
+            \ jsonData TEXT not null, \
+            \ lastUpdate TEXT NOT NULL, \
+            \ lastError TEXT, \
+            \ errorCount INTEGER DEFAULT 0 \
+            \)" []
+        return ()
+    commit dbh
+
+      
+-- Yahoo stock ticker field codes
+
 codes = [  
         ("Name", "n"),
         ("Symbol", "s"),
@@ -165,30 +192,4 @@ testcsv = "41.16,35.0994,37.9459,41.72,21.87,\"21.87 - 41.72\",\"N/A - N/A\",\"-
 
 testFetch = fetch "YHOO" (Just 5000)
 
-
--- Database
-
-connect :: FilePath -> IO Connection
-connect fp = do
-    dbh <- connectSqlite3 fp
-    prepDB dbh
-    return dbh
-
-
-prepDB :: IConnection conn => conn -> IO ()
-prepDB dbh = do
-    tables <- getTables dbh
-    when (not ("tickers" `elem` tables)) $ do
-        run dbh
-            "CREATE table tickers ( \
-            \ ticker TEXT NOT NULL UNIQUE, \
-            \ jsonData TEXT not null, \
-            \ lastUpdate TEXT NOT NULL, \
-            \ lastError TEXT, \
-            \ errorCount INTEGER DEFAULT 0 \
-            \)" []
-        return ()
-    commit dbh
-
-      
-    
+ 
