@@ -16,18 +16,29 @@ printJson :: String -> IO ()
 printJson sym = getJson sym >>= putStrLn . B.unpack
 
 getJson :: String -> IO B.ByteString
-getJson sym = getData sym  >>= return . encode 
+getJson sym = do 
+      r <- fetch sym 
+      return $ encode $ either (const errorMsg) id $ getData r
 
-getData sym = fetch sym  >>= return . csv2alist . string2csv 
 
-csv2alist :: [[String]] -> Map.Map String String
-csv2alist (xs:_) = Map.fromList $ zip (map fst codes) xs
-csv2alist _ = error "Empty csv"
+errorMsg = Map.fromList [("Error", "No matching symbol")]
 
-string2csv :: String -> [[String]]
+-- feed fetch sym 
+getData :: String -> Either String (Map.Map String String)
+getData sym = 
+  let r = string2csv sym
+  in case r of
+        Left s -> Left s
+        Right records -> Right . csv2map $ records
+
+csv2map :: [[String]] -> Map.Map String String
+csv2map (xs:_) = Map.fromList $ zip (map fst codes) xs
+csv2map _ = error "Empty csv"
+
+string2csv :: String -> Either String [[String]]
 string2csv s = case parseCSV "" s of
-                 Left err -> error $ "failed: " ++ show err
-                 Right csv -> csv
+                 Left err -> Left $ "failed to parse string: " ++ show s
+                 Right csv -> Right csv
 
 formatResponse :: [[String]] -> [(String, String)]
 formatResponse (xs:_) = zip (map fst codes) xs 
