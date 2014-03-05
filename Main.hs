@@ -184,7 +184,8 @@ prepDB dbh = do
             \ ticker TEXT NOT NULL UNIQUE, \
             \ jsonData TEXT not null, \
             \ lastUpdate TEXT NOT NULL, \
-            \ lastError TEXT \
+            \ lastError TEXT, \
+            \ errorCount INTEGER DEFAULT 0 \
             \)" []
         return ()
     commit dbh
