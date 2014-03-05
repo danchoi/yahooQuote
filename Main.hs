@@ -28,7 +28,7 @@ optionsP = Options
 main = do
     options <- execParser opts 
     print options
-    getJson (symbol options) (fmap (* 1000) $ timeoutMilliSec options) >>= putStrLn . B.unpack
+    getJson (symbol options) (timeoutMilliSec options) >>= putStrLn . B.unpack
 
   where opts = info (helper <*> optionsP)
           ( fullDesc 
@@ -81,7 +81,7 @@ formatResponse [] = []
 fetch :: String -> Maybe Int -> IO String
 fetch sym t = do
   request <- parseUrl $ url sym 
-  rsp <- withManager $ httpLbs $ request { responseTimeout = t }
+  rsp <- withManager $ httpLbs $ request { responseTimeout = ( (* 1000) <$> t) }
   return . B.unpack . responseBody $ rsp
 
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
@@ -175,6 +175,6 @@ codes = [
 
 testcsv = "41.16,35.0994,37.9459,41.72,21.87,\"21.87 - 41.72\",\"N/A - N/A\",\"-\",39.70,600,39.70,17247400,39.63,300,39.63,12.587,\"+1.38 - +3.61%\",\"+1.38\",+4.5306,+1.6841,-2.09,+17.76,\"N/A - +3.61%\",\"+3.61%\",+1.38,-,39.79,38.68,\"N/A - N/A\",\"38.68 - 39.79\",\"N/A - N/A\",\"- - +3.61%\",\"N/A\",N/A,0.00,1.206B,1.58,0.37,1.80,1.26,\"N/A\",\"N/A\",   963,215,000,-,N/A,\"N/A - N/A\",\"- - -\",-,N/A,-,39.63,\"N/A - <b>39.63</b>\",\"Mar  4 - <b>39.63</b>\",\"3/4/2014\",535,222,\"4:00pm\",-,N/A,41.166B,\"cn\",\"Yahoo Inc.\",\"-\",38.74,\"N/A\",N/A,30.36,3.34,-5.01%,+12.91%,+4.44%,+81.21%,38.25,-,3.04,24.21,21.25,8.49,-,1.20,\"NasdaqNM\",\"YHOO\",\"&nbsp;===+=+&nbsp;\",-"
 
-testFetch = fetch "YHOO"
+testFetch = fetch "YHOO" (Just 5000)
 
 
