@@ -21,7 +21,7 @@ optionsP :: Parser Options
 optionsP = Options 
             <$> argument str (metavar "SYMBOL" <> help "Ticker symbol") 
             <*> (optional $ option ( 
-                long "timeout" <> short 't' <> metavar "MILLISECONDS" <> help "Timeout in milliseconds"
+                long "timeout" <> short 't' <> metavar "MSEC" <> help "Timeout in milliseconds"
               ))
             <*> switch ( long "use-cache" <> short 'u' <> help "Use local sqlite3 cache" )
 
@@ -81,7 +81,7 @@ formatResponse [] = []
 fetch :: String -> Maybe Int -> IO String
 fetch sym t = do
   request <- parseUrl $ url sym 
-  rsp <- withManager $ httpLbs $ request { responseTimeout = ( (* 1000) <$> t) }
+  rsp <- withManager $ httpLbs $ request { responseTimeout = ((* 1000) <$> t) }
   return . B.unpack . responseBody $ rsp
 
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
