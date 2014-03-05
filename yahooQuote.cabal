@@ -22,7 +22,7 @@ executable yahooQuote
   build-depends:       base >=4.6 && <4.7,
                        csv,
                        aeson,
-                       HTTP,
+                       http-conduit,
                        bytestring,
                        containers,
                        optparse-applicative

@@ -4,7 +4,7 @@ import Control.Exception
 import Text.CSV
 import Data.List (intercalate)
 import Data.Aeson
-import Network.HTTP
+import Network.HTTP.Conduit
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.Environment
@@ -13,7 +13,7 @@ import Control.Applicative (optional)
 
 data Options = Options { 
                   symbol :: String
-                , timeoutSec :: Maybe Int
+                , timeoutMilliSec :: Maybe Int
                 , sqliteCache :: Bool 
                 } deriving (Show)
   
@@ -21,26 +21,27 @@ optionsP :: Parser Options
 optionsP = Options 
             <$> argument str (metavar "SYMBOL" <> help "Ticker symbol") 
             <*> (optional $ option ( 
-                long "timeout" <> short 't' <> metavar "SECONDS" <> help "Timeout in seconds"
+                long "timeout" <> short 't' <> metavar "MILLISECONDS" <> help "Timeout in milliseconds"
               ))
             <*> switch ( long "use-cache" <> short 'u' <> help "Use local sqlite3 cache" )
 
 main = do
     options <- execParser opts 
     print options
-    printJson $ symbol options
+    getJson (symbol options) (fmap (* 1000) $ timeoutMilliSec options) >>= putStrLn . B.unpack
+
   where opts = info (helper <*> optionsP)
           ( fullDesc 
             <> progDesc "Show JSON info for stock ticker from Yahoo"
             <> header "yahooQuote - Yahoo financial info"
           )
 
-printJson :: String -> IO ()
-printJson sym = getJson sym >>= putStrLn . B.unpack
 
-getJson :: String -> IO B.ByteString
-getJson sym = (do 
-      r <- fetch sym 
+getJson :: String       -- ^ ticker
+        -> (Maybe Int)  -- ^ timeout in milliseconds
+        -> IO B.ByteString
+getJson sym t = (do 
+      r <- fetch sym t
       return $ encode $ either (const $ errorMsg "No matching symbol") id $ getData r
       ) `catch` (\e -> return . encode . errorMsg $ show (e :: SomeException))
     where errorMsg e = Map.fromList [("Error", e)]
@@ -49,11 +50,11 @@ getJson sym = (do
 
   Contemplated errors are
 
-    {"Error":"user error (openTCPConnection: host lookup failure for \"download.finance.yahoo.com\")"}
-
-  and
-
     {"Error":"No matching symbol"}
+
+    In case of timeout or no network:
+    {"Error":"FailedConnectionException \"download.finance.yahoo.com\" 80"}
+    {"Error":"ResponseTimeout"}
 
 -}
 
@@ -77,10 +78,11 @@ formatResponse :: [[String]] -> [(String, String)]
 formatResponse (xs:_) = zip (map fst codes) xs 
 formatResponse [] = []
 
-fetch :: String -> IO String
-fetch sym = do
-  rsp <- Network.HTTP.simpleHTTP (getRequest $ url sym)
-  getResponseBody rsp
+fetch :: String -> Maybe Int -> IO String
+fetch sym t = do
+  request <- parseUrl $ url sym 
+  rsp <- withManager $ httpLbs $ request { responseTimeout = t }
+  return . B.unpack . responseBody $ rsp
 
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
           (intercalate "" $ map snd codes)
