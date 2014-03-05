@@ -30,10 +30,11 @@ optionsP = Options
 
 main = do
     options <- execParser opts 
-    print options
+    -- print options
     res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
-    putStrLn . B.unpack . encode $ res
+    let json = B.unpack . encode $ res
+    putStrLn json
 
   where opts = info (helper <*> optionsP)
           ( fullDesc 
