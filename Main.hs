@@ -64,6 +64,10 @@ url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++
           (intercalate "" $ map snd codes)
 
 codes = [  
+        ("Name", "n"),
+        ("Symbol", "s"),
+        ("Market Cap (Real-time)", "j3"),
+        ("Market Capitalization", "j1"),
         ("1 yr Target Price", "t8"),
         ("200-day Moving Average", "m4"),
         ("50-day Moving Average", "m3"),
@@ -121,10 +125,6 @@ codes = [
         ("Last Trade Size", "k3"),
         ("Last Trade Time", "t1"),
         ("Low Limit", "l3"),
-        ("Market Cap (Real-time)", "j3"),
-        ("Market Capitalization", "j1"),
-        ("More Info", "i"),
-        ("Name", "n"),
         ("Notes", "n4"),
         ("Open", "o"),
         ("Order Book (Real-time)", "i5"),
@@ -144,7 +144,6 @@ codes = [
         ("Shares Owned", "s1"),
         ("Short Ratio", "s7"),
         ("Stock Exchange", "x"),
-        ("Symbol", "s"),
         ("Ticker Trend", "t7"),
         ("Trade Date", "d2"),
         ("Volume", "v")
