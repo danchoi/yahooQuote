@@ -13,6 +13,7 @@ import Control.Applicative (optional)
 import Database.HDBC
 import Database.HDBC.Sqlite3
 import Control.Monad (when)
+import Data.Maybe (fromMaybe)
 import System.IO
 
 data Options = Options { 
@@ -35,17 +36,19 @@ main = do
     -- res is a Map
     res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
-    let json = B.unpack . encode $ res
-    when (sqliteCache options) $ do
-        dbh <- connect "tickers.db"
-        case (Map.lookup "Error" res) of
-            Just "No matching symbol" -> return ()
-            Just err -> do 
-                -- TODO need Monad Alternative here
-                -- retreive cache or log error?
-                logError dbh (symbol options) err 
-            Nothing -> cacheResult dbh (symbol options) json 
-        return ()
+    res' <- if (sqliteCache options) 
+            then do
+              dbh <- connect "tickers.db"
+              case (Map.lookup "Error" res) of
+                  Just "No matching symbol" -> return res
+                  Just err -> do 
+                      cachedData <- cachedJson dbh (symbol options) 
+                      logError dbh (symbol options) err 
+                      let res'' = Map.union res cachedData
+                      return res''
+                  Nothing -> cacheResult dbh (symbol options) (encode res) >> return res
+             else return res
+    let json = B.unpack . encode $ res'
     putStrLn json
   where opts = info (helper <*> optionsP)
           ( fullDesc 
@@ -54,7 +57,7 @@ main = do
           )
         errorMsg e = Map.fromList [("Error", e)]
 
-cacheResult :: IConnection c => c -> String -> String -> IO ()
+cacheResult :: IConnection c => c -> String -> B.ByteString -> IO ()
 cacheResult dbh sym json = do
     run dbh
         "INSERT OR REPLACE INTO tickers (ticker, jsonData, lastError) VALUES (?, ?, ?)"
@@ -66,12 +69,22 @@ cacheResult dbh sym json = do
 logError :: IConnection c => c -> String -> String -> IO ()
 logError dbh sym err = do
     run dbh
-        "INSERT OR REPLACE INTO tickers (ticker, lastError) VALUES (?, ?)"
+        "INSERT INTO errors (ticker, error) VALUES (?, ?)"
         [toSql sym, toSql err]
     commit dbh
     return ()
 
-
+cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)
+cachedJson dbh sym = do
+    r <- quickQuery' dbh "select jsonData, lastUpdate from tickers where ticker = ? and \
+                \ jsonData is not null" [toSql sym]
+    case r of 
+      [[json, timestamp]] -> do
+          let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
+          case xs of 
+              Just xs' -> return $ Map.insert "CACHED" (fromSql timestamp :: String) xs'
+              Nothing -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
+      otherwise -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
 {-
 
   Contemplated errors are
@@ -81,6 +94,7 @@ logError dbh sym err = do
     In case of timeout or no network:
     {"Error":"FailedConnectionException \"download.finance.yahoo.com\" 80"}
     {"Error":"ResponseTimeout"}
+    {"Error": "StatusCodeException (Status {statusCode = 502, statusMessage = \"Server Hangup\"})
 
 -}
 
@@ -115,16 +129,23 @@ connect fp = do
 prepDB :: IConnection conn => conn -> IO ()
 prepDB dbh = do
     tables <- getTables dbh
-    print tables
     when (not ("tickers" `elem` tables)) $ do
-        hPutStrLn stderr "Creating database"
+        hPutStrLn stderr "Creating tickers database"
         run dbh
             "CREATE table tickers ( \
             \ ticker TEXT NOT NULL UNIQUE, \
             \ jsonData TEXT, \
-            \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
-            \ lastError TEXT, \
-            \ errorCount INTEGER DEFAULT 0 \
+            \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
+            \)" []
+        commit dbh
+        return ()
+    when (not ("errors" `elem` tables)) $ do
+        hPutStrLn stderr "Creating errors database"
+        run dbh
+            "CREATE table errors ( \
+            \ ticker TEXT NOT NULL UNIQUE, \
+            \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
+            \ error  TEXT \
             \)" []
         commit dbh
         return ()
