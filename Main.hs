@@ -10,6 +10,9 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.Environment
 import Options.Applicative
 import Control.Applicative (optional)
+import Database.HDBC
+import Database.HDBC.Sqlite3
+import Control.Monad (when)
 
 data Options = Options { 
                   symbol :: String
@@ -28,23 +31,17 @@ optionsP = Options
 main = do
     options <- execParser opts 
     print options
-    getJson (symbol options) (timeoutMilliSec options) >>= putStrLn . B.unpack
+    res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
+             `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
+    putStrLn . B.unpack . encode $ res
 
   where opts = info (helper <*> optionsP)
           ( fullDesc 
             <> progDesc "Show JSON info for stock ticker from Yahoo"
             <> header "yahooQuote - Yahoo financial info"
           )
+        errorMsg e = Map.fromList [("Error", e)]
 
-
-getJson :: String       -- ^ ticker
-        -> (Maybe Int)  -- ^ timeout in milliseconds
-        -> IO B.ByteString
-getJson sym t = (do 
-      r <- fetch sym t
-      return $ encode $ either (const $ errorMsg "No matching symbol") id $ getData r
-      ) `catch` (\e -> return . encode . errorMsg $ show (e :: SomeException))
-    where errorMsg e = Map.fromList [("Error", e)]
 
 {-
 
@@ -58,25 +55,15 @@ getJson sym t = (do
 
 -}
 
-getData :: String -> Either String (Map.Map String String)
-getData sym = 
-  let r = string2csv sym
-  in case r of
-        Left s -> Left s
-        Right records -> Right . csv2map $ records
-
-csv2map :: [[String]] -> Map.Map String String
-csv2map (xs:_) = Map.fromList $ zip (map fst codes) xs
+csv2map :: Either String [[String]] -> Map.Map String String
+csv2map (Right (xs:_)) = Map.fromList $ zip (map fst codes) xs
+csv2map (Left err) = Map.fromList [("Error", err)]
 csv2map _ = error "Empty csv"
 
 string2csv :: String -> Either String [[String]]
 string2csv s = case parseCSV "" s of
-                 Left err -> Left $ "failed to parse string: " ++ show s
+                 Left err -> Left $ "No matching symbol" 
                  Right csv -> Right csv
-
-formatResponse :: [[String]] -> [(String, String)]
-formatResponse (xs:_) = zip (map fst codes) xs 
-formatResponse [] = []
 
 fetch :: String -> Maybe Int -> IO String
 fetch sym t = do
@@ -178,3 +165,28 @@ testcsv = "41.16,35.0994,37.9459,41.72,21.87,\"21.87 - 41.72\",\"N/A - N/A\",\"-
 testFetch = fetch "YHOO" (Just 5000)
 
 
+-- Database
+
+connect :: FilePath -> IO Connection
+connect fp = do
+    dbh <- connectSqlite3 fp
+    prepDB dbh
+    return dbh
+
+
+prepDB :: IConnection conn => conn -> IO ()
+prepDB dbh = do
+    tables <- getTables dbh
+    when (not ("tickers" `elem` tables)) $ do
+        run dbh
+            "CREATE table tickers ( \
+            \ ticker TEXT NOT NULL UNIQUE, \
+            \ jsonData TEXT not null, \
+            \ lastUpdate TEXT NOT NULL, \
+            \ lastError TEXT \
+            \)" []
+        return ()
+    commit dbh
+
+      
+    
