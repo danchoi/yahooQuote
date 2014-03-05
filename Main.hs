@@ -121,7 +121,7 @@ prepDB dbh = do
         run dbh
             "CREATE table tickers ( \
             \ ticker TEXT NOT NULL UNIQUE, \
-            \ jsonData TEXT not null, \
+            \ jsonData TEXT, \
             \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
             \ lastError TEXT, \
             \ errorCount INTEGER DEFAULT 0 \
