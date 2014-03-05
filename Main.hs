@@ -13,6 +13,7 @@ import Control.Applicative (optional)
 import Database.HDBC
 import Database.HDBC.Sqlite3
 import Control.Monad (when)
+import System.IO
 
 data Options = Options { 
                   symbol :: String
@@ -31,17 +32,44 @@ optionsP = Options
 main = do
     options <- execParser opts 
     -- print options
+    -- res is a Map
     res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
     let json = B.unpack . encode $ res
+    when (sqliteCache options) $ do
+        dbh <- connect "tickers.db"
+        case (Map.lookup "Error" res) of
+            Just "No matching symbol" -> return ()
+            Just err -> do 
+                -- need Monad Alternative here
+                -- retreive cache or log error?
+                logError dbh (symbol options) err 
+            Nothing -> cacheResult dbh (symbol options) json 
+        return ()
     putStrLn json
-
   where opts = info (helper <*> optionsP)
           ( fullDesc 
             <> progDesc "Show JSON info for stock ticker from Yahoo"
             <> header "yahooQuote - Yahoo financial info"
           )
         errorMsg e = Map.fromList [("Error", e)]
+
+cacheResult :: IConnection c => c -> String -> String -> IO ()
+cacheResult dbh sym json = do
+    run dbh
+        "INSERT OR REPLACE INTO tickers (ticker, jsonData, lastError) VALUES (?, ?, ?)"
+        [toSql sym, toSql json, SqlNull]
+
+    commit dbh
+    return ()
+ 
+logError :: IConnection c => c -> String -> String -> IO ()
+logError dbh sym err = do
+    run dbh
+        "INSERT OR REPLACE INTO tickers (ticker, lastError) VALUES (?, ?)"
+        [toSql sym, toSql err]
+    commit dbh
+    return ()
 
 
 {-
@@ -87,15 +115,18 @@ connect fp = do
 prepDB :: IConnection conn => conn -> IO ()
 prepDB dbh = do
     tables <- getTables dbh
+    print tables
     when (not ("tickers" `elem` tables)) $ do
+        hPutStrLn stderr "Creating database"
         run dbh
             "CREATE table tickers ( \
             \ ticker TEXT NOT NULL UNIQUE, \
             \ jsonData TEXT not null, \
-            \ lastUpdate TEXT NOT NULL, \
+            \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
             \ lastError TEXT, \
             \ errorCount INTEGER DEFAULT 0 \
             \)" []
+        commit dbh
         return ()
     commit dbh
 
