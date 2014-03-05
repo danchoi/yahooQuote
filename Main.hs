@@ -41,7 +41,7 @@ main = do
         case (Map.lookup "Error" res) of
             Just "No matching symbol" -> return ()
             Just err -> do 
-                -- need Monad Alternative here
+                -- TODO need Monad Alternative here
                 -- retreive cache or log error?
                 logError dbh (symbol options) err 
             Nothing -> cacheResult dbh (symbol options) json 
