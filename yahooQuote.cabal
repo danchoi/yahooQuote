@@ -24,7 +24,8 @@ executable yahooQuote
                        aeson,
                        HTTP,
                        bytestring,
-                       containers
+                       containers,
+                       optparse-applicative
 
   hs-source-dirs:      .
   default-language:    Haskell2010

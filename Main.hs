@@ -8,10 +8,32 @@ import Network.HTTP
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.Environment
+import Options.Applicative
+import Control.Applicative (optional)
+
+data Options = Options { 
+                  symbol :: String
+                , timeoutSec :: Maybe Int
+                , sqliteCache :: Bool 
+                } deriving (Show)
+  
+optionsP :: Parser Options 
+optionsP = Options 
+            <$> argument str (metavar "SYMBOL" <> help "Ticker symbol") 
+            <*> (optional $ option ( 
+                long "timeout" <> short 't' <> metavar "SECONDS" <> help "Timeout in seconds"
+              ))
+            <*> switch ( long "use-cache" <> short 'u' <> help "Use local sqlite3 cache" )
 
 main = do
-  (x:_) <- getArgs
-  printJson x
+    options <- execParser opts 
+    print options
+    printJson $ symbol options
+  where opts = info (helper <*> optionsP)
+          ( fullDesc 
+            <> progDesc "Show JSON info for stock ticker from Yahoo"
+            <> header "yahooQuote - Yahoo financial info"
+          )
 
 printJson :: String -> IO ()
 printJson sym = getJson sym >>= putStrLn . B.unpack
