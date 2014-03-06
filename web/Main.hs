@@ -10,9 +10,13 @@ import YahooQuote
 main :: IO ()
 main = quickHttpServe site
 
+
+help :: B.ByteString
+help = "Use resource pattern: yahooQuote/[symbol]?timeout=[milliseconds]"
+
 site :: Snap ()
 site =
-    ifTop (writeBS "yahooQuote/:sym") <|>
+    ifTop (writeBS help) <|>
     route [ ("yahooQuote/:sym", yahooHandler) ]
 
 
@@ -21,7 +25,7 @@ yahooHandler = do
     param <- getParam "sym"
     timeout' <- getParam "timeout"
     let timeout = maybe (Just 200) (fmap fst . B.readInt) timeout'
-    maybe (writeBS "Use resource pattern: yahooQuote/[symbol]?timeout=[milliseconds]")
+    maybe (writeBS help)
           (\sym -> do 
               resp <- liftIO $ yahooQuote (Options (B.unpack sym) timeout True) 
               writeLBS resp) 
