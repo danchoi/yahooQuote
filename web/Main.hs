@@ -21,7 +21,7 @@ yahooHandler = do
     param <- getParam "sym"
     timeout' <- getParam "timeout"
     let timeout = maybe (Just 200) (fmap fst . B.readInt) timeout'
-    maybe (writeBS "must specify yahooQuote/:sym in URL")
+    maybe (writeBS "Use resource pattern: yahooQuote/[symbol]?timeout=[milliseconds]")
           (\sym -> do 
               resp <- liftIO $ yahooQuote (Options (B.unpack sym) timeout True) 
               writeLBS resp) 
