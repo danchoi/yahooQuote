@@ -110,7 +110,7 @@ cachedJson dbh sym = do
 -}
 
 csv2map :: Either String [[String]] -> Map.Map String String
-csv2map (Right (xs:_)) = Map.fromList $ zip (map fst codes) xs
+csv2map (Right (xs:_)) = Map.fromList $ zip (map fst codes') xs
 csv2map (Left err) = Map.fromList [("Error", err)]
 csv2map _ = error "Empty csv"
 
@@ -127,7 +127,7 @@ fetch sym t = do
 
 url :: String -> String
 url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++ 
-          (intercalate "" $ map snd codes)
+          (intercalate "" $ map snd codes')
 
 -- Database
 
@@ -163,6 +163,11 @@ prepDB dbh = do
         return ()
     commit dbh
 
+
+
+codes' :: [(String, String)]
+codes' = [(k, v) | (k, v) <- codes, k `elem` usedFields]
+  where usedFields = ["Symbol", "Name", "Last Trade (Price Only)", "Market Capitalization", "52-week Range", "Volume", "P/E Ratio", "EPS Estimate Current Year", "EPS Estimate Next Year", "Price/EPS Estimate Current Year", "Price/EPS Estimate Next Year"]
       
 -- Yahoo stock ticker field codes
 

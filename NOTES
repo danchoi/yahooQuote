@@ -17,3 +17,5 @@ http://download.finance.yahoo.com/d/quotes.csv?s=AMZN&f=snl1j1wvre7e8r6r7
 TODO
 - separate executable for snap webserver
 
+
+'Symbol', 'Name', 'Last Trade (Price Only)', 'Market Capitalization', '52-week Range', 'Volume', 'P/E Ratio', 'EPS Estimate Current Year', 'EPS Estimate Next Year', 'Price/EPS Estimate Current Year', 'Price/EPS Estimate Next Year'])
