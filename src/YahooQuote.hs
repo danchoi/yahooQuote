@@ -12,11 +12,13 @@ import Database.HDBC
 import Database.HDBC.Sqlite3
 import Control.Monad (when)
 import System.IO
+import System.Exit (exitSuccess)
 
 data Options = Options { 
                   symbol :: String
                 , timeoutMilliSec :: Maybe Int
                 , sqliteCache :: Bool 
+                , csvOnly  :: Bool 
                 } deriving (Show)
   
 optionsP :: Parser Options 
@@ -26,6 +28,7 @@ optionsP = Options
                 long "timeout" <> short 't' <> metavar "MSEC" <> help "Timeout in milliseconds"
               ))
             <*> switch ( long "use-cache" <> short 'u' <> help "Use local sqlite3 cache" )
+            <*> switch ( long "csv-only" <> help "Dump CSV only" )
 
 runCmd :: IO ()
 runCmd = do 
@@ -43,6 +46,10 @@ runCmd = do
 
 yahooQuote :: Options -> IO B.ByteString
 yahooQuote options = do
+    when (csvOnly options) $ do
+        csv <- fetch (symbol options) (timeoutMilliSec options)
+        putStrLn csv
+        exitSuccess
     res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
     res' <- if (sqliteCache options) 
@@ -174,6 +181,7 @@ codes = [
         ("After Hours Change (Real-time)", "c8"),
         ("Annualized Gain", "g3"),
         ("Ask (Real-time)", "b2"),
+        ("Volume", "v"),
         ("Ask Size", "a5"),
         ("Ask", "a"),
         ("Average Daily Volume", "a2"),
@@ -240,10 +248,7 @@ codes = [
         ("Price/Sales", "p5"),
         ("Shares Owned", "s1"),
         ("Short Ratio", "s7"),
-        ("Stock Exchange", "x"),
-        ("Ticker Trend", "t7"),
-        ("Trade Date", "d2"),
-        ("Volume", "v")
+        ("Trade Date", "d2")
        ]
 
 testcsv :: String
