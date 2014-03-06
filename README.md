@@ -1,4 +1,4 @@
-# yahooq
+# yahooQuote
 
 A command line tool to fetch Yahoo finance data for stock tickers.
 
