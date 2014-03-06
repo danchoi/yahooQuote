@@ -49,14 +49,15 @@ yahooQuote options = do
             then do
               dbh <- connect "tickers.db"
               case (Map.lookup "Error" res) of
-                  Just "No matching symbol" -> return res
+                  Just "No matching symbol" -> disconnect dbh >> return res
                   Just err -> do 
                       cachedData <- cachedJson dbh (symbol options) 
                       logError dbh (symbol options) err 
                       let res'' = Map.union res cachedData
+                      disconnect dbh
                       return res''
-                  Nothing -> cacheResult dbh (symbol options) (encode res) >> return res
-             else return res
+                  Nothing -> cacheResult dbh (symbol options) (encode res) >> disconnect dbh >> return res
+            else return res
     return . encode $ res'
   where errorMsg e = Map.fromList [("Error", e)]
 
