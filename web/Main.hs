@@ -6,10 +6,8 @@ import           Snap.Core
 import           Snap.Http.Server
 import qualified Data.ByteString.Char8 as B
 import YahooQuote
-import Options.Applicative
 
--- main = YahooQuote.runCmd
-
+main :: IO ()
 main = quickHttpServe site
 
 site :: Snap ()

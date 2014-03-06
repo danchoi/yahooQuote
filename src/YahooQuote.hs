@@ -35,7 +35,7 @@ runCmd = do
   where opts = info (helper <*> optionsP)
           ( fullDesc 
             <> progDesc "Show JSON info for stock ticker from Yahoo"
-            <> header "yahooQuote - Yahoo financial info"
+            <> header "yahooq - Yahoo financial info"
           )
 
 
