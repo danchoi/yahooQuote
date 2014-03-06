@@ -27,7 +27,7 @@ yahooHandler = do
     let timeout = maybe (Just 200) (fmap fst . B.readInt) timeout'
     maybe (writeBS help)
           (\sym -> do 
-              resp <- liftIO $ yahooQuote (Options (B.unpack sym) timeout True False) 
+              resp <- liftIO $ yahooQuote (Options (B.unpack sym) timeout False) 
               writeLBS resp) 
           param
 
