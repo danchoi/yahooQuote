@@ -7,7 +7,8 @@ Usage: yahooq SYMBOL [-t|--timeout MSEC] [-u|--use-cache]
 ```
 
 yahooq-web starts up a web server that serves JSON to API queries to
-/yahooQuote/:symbol.
+`/yahooQuote/:symbol`. The default timeout is 2000 milliseconds. To customize
+the timeout, use `/yahooQuote/:symbol?timeout=ms`
 
 
 
