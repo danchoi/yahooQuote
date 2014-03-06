@@ -165,6 +165,8 @@ prepDB dbh = do
 
 
 
+-- A restricted set of codes; using the full list leads to CSV parsing anomalies
+
 codes' :: [(String, String)]
 codes' = [(k, v) | (k, v) <- codes, k `elem` usedFields]
   where usedFields = ["Symbol", "Name", "Last Trade (Price Only)", "Market Capitalization", "52-week Range", "Volume", "P/E Ratio", "EPS Estimate Current Year", "EPS Estimate Next Year", "Price/EPS Estimate Current Year", "Price/EPS Estimate Next Year", "Previous Close", "Open", "Bid"]
