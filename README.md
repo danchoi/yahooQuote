@@ -46,14 +46,17 @@ values for CACHED and CACHED-AGE-SECONDS; e.g.,
 
 
 
-TODO
+### yahooq-web
 
 The auxilliary command `yahooq-web` starts up a web server that serves JSON to
-API queries to `/yahooQuote/:symbol`. 
+API queries to `/yahooQuote/:symbol`. The URL pattern is.
 
-The default timeout is 2000 milliseconds. To customize the timeout, use
-`/yahooQuote/:symbol?timeout=ms`
+    yahooQuote/[symbol]?[timeout=MILLISECONDS]&[freshness=SECS]"
 
+The default timeout is 2000 milliseconds. Default freshness is 1 hour (3600 s).
+
+Make sure `yahooq`, `yahooq-cache`, and `bin/yahooq-wrappers` are in PATH
+environment variable for the webserver process.
 
 
 
