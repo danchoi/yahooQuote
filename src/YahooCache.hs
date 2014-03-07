@@ -50,7 +50,6 @@ opts = info (helper <*> optionsP)
 main :: IO ()
 main = do 
     options <- execParser opts 
-    print options
     case options of 
       (Options Nothing _) -> cachingMode 
       (Options (Just sym) freshness') -> fetchMode sym freshness'
@@ -62,9 +61,8 @@ main = do
 cachingMode :: IO ()
 cachingMode = do
     raw <- B.getContents
-    B.putStrLn raw
+    B.putStrLn raw -- pass through input to stdout
     let msg = maybe Map.empty id (decode raw :: Maybe (Map.Map String String))
-    print msg
     dbh <- connect "tickers.db" 
     case Map.lookup "Symbol" msg of
       Nothing -> error "Missing Symbol value in input data"
