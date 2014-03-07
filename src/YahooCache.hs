@@ -63,9 +63,15 @@ cachingMode :: IO ()
 cachingMode = do
     raw <- B.getContents
     B.putStrLn raw
-    let json = decode raw :: Maybe (Map.Map String String)
-    print json
-
+    let msg = maybe Map.empty id (decode raw :: Maybe (Map.Map String String))
+    print msg
+    dbh <- connect "tickers.db" 
+    case Map.lookup "Symbol" msg of
+      Nothing -> error "Missing Symbol value in input data"
+      Just sym -> 
+        case Map.lookup "Error" msg of
+          Just errorMsg -> logError dbh sym errorMsg
+          Nothing -> cacheResult dbh sym raw
 
 fetchMode :: String -> Maybe Int -> IO ()
 fetchMode = undefined
@@ -101,7 +107,7 @@ logError dbh sym err = do
 
 cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)
 cachedJson dbh sym = do
-    r <- quickQuery' dbh "select jsonData, lastUpdate from tickers where ticker = ? and \
+    r <- quickQuery' dbh "select jsonData, timestamp from tickers where ticker = ? and \
                 \ jsonData is not null" [toSql sym]
     case r of 
       [[json, timestamp]] -> do
@@ -132,7 +138,7 @@ prepDB dbh = do
             "CREATE table tickers ( \
             \ ticker TEXT NOT NULL UNIQUE, \
             \ jsonData TEXT, \
-            \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
+            \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
             \)" []
         commit dbh
         return ()
@@ -185,7 +191,7 @@ logError dbh sym err = do
 
 cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)
 cachedJson dbh sym = do
-    r <- quickQuery' dbh "select jsonData, lastUpdate from tickers where ticker = ? and \
+    r <- quickQuery' dbh "select jsonData, timestamp from tickers where ticker = ? and \
                 \ jsonData is not null" [toSql sym]
     case r of 
       [[json, timestamp]] -> do
@@ -205,8 +211,6 @@ connect fp = do
     return dbh
 
 
-
-
 prepDB :: IConnection conn => conn -> IO ()
 prepDB dbh = do
     tables <- getTables dbh
@@ -216,7 +220,7 @@ prepDB dbh = do
             "CREATE table tickers ( \
             \ ticker TEXT NOT NULL UNIQUE, \
             \ jsonData TEXT, \
-            \ lastUpdate TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
+            \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
             \)" []
         commit dbh
         return ()
