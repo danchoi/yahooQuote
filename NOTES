@@ -56,5 +56,23 @@ produces error:
 
 In sqlite3 db, the timestamp column stores text like 2014-03-07 17:21:42
 
+http://stackoverflow.com/questions/2930768/how-to-compare-sqlite-timestamp-values
+
+
+
+
+014-03-07 17:41:36
+sqlite> select datetime('now', '-2 minutes' ) > datetime('now')
+   ...> ;
+0
+sqlite> select datetime('now', '-2 minutes' ) > datetime('now');
+0
+sqlite> select datetime('now', '-2 minutes' ) < datetime('now');
+1
+sqlite> 
+
+
+
+
 
 

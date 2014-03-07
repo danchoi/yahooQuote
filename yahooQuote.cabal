@@ -43,8 +43,7 @@ executable yahooq-cache
           text,
           aeson,
           bytestring,
-          containers,
-          old-time
+          containers
   hs-source-dirs: src
   default-language: Haskell2010
 

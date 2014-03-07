@@ -10,7 +10,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import System.Exit
 import Control.Monad (when)
-import System.Time
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
   pipeline or after it, or both.
@@ -29,7 +28,7 @@ import System.Time
 
 data Options = Options {
     cacheFetch :: Maybe String  -- ticker symbol; also puts in fetch mode
-  , freshness :: Maybe Int      -- fetch if cached data is newer than N minutes
+  , freshness :: Maybe Int      -- minimum cached age seconds
 } deriving (Show)
 
 optionsP :: Parser Options
@@ -40,7 +39,7 @@ optionsP = Options
       )
     <*> (optional $ option 
       ( long "freshness" <> short 'f' 
-        <> metavar "MIN" <> help "[fetch mode] fetch from cache if under MIN minutes old")
+        <> metavar "SEC" <> help "[fetch mode] minimum cached age in seconds")
       )
 
 opts = info (helper <*> optionsP)
@@ -81,15 +80,26 @@ cachingMode dbh = do
 
 fetchMode :: IConnection c => c -> String -> Maybe Int -> IO ()
 fetchMode dbh sym freshness' = do
-    r <- quickQuery' dbh "select jsonData, timestamp from tickers where ticker = ? and \
-                \ jsonData is not null" [toSql sym]
+    -- freshness is in seconds (not minutes so testing is easier)
+    let freshness = maybe (60 * 100) id freshness'
+    r <- quickQuery' dbh 
+          "select jsonData, timestamp, \
+          \ strftime('%s','now') - strftime('%s', timestamp) as diffSeconds \
+          \ from tickers where ticker = ? and \
+          \ jsonData is not null \
+          \ and (timestamp > datetime('now', ?) = 1)" 
+          [ toSql sym, 
+            toSql $ "-" ++ show freshness ++ " seconds"
+          ]
     case r of 
-      [[json, timestamp]] -> do
-          print (fromSql timestamp :: ClockTime)
-          let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
-          case xs of 
-              Nothing -> exitFailure
-              Just xs' -> B.putStrLn $ encode $ Map.insert "CACHED" (fromSql timestamp :: String) xs'
+      [[json, timestamp, diffSeconds]] -> do
+        let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
+        case xs of 
+            Nothing -> exitFailure
+            Just xs' -> B.putStrLn $ encode $ 
+              Map.insert "CACHED" (fromSql timestamp :: String) $ 
+              Map.insert "CACHED-AGE-SECONDS" (fromSql diffSeconds :: String) $ 
+              xs'
       _ -> exitFailure
 
 cacheResult :: IConnection c => c -> String -> B.ByteString -> IO ()
