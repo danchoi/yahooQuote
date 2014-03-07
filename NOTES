@@ -72,6 +72,26 @@ sqlite> select datetime('now', '-2 minutes' ) < datetime('now');
 sqlite> 
 
 
+TODO
+
+
+Add function to yahooq-cache that shortcuts symbols with "No matching symbol"
+in the errors list in the 1st fork of the || control structure:
+
+    yahooq-cache -f $freshsec -s $sym || (yahooq $sym -t $timeout | yahooq-cache) 
+    
+
+[choi@sparta yahooQuote]$ sqlite3 tickers.db "select * from errors"
+YHOO|2014-03-07 20:12:46|ResponseTimeout
+MSFT|2014-03-07 20:19:33|FailedConnectionException "download.finance.yahoo.com" 80
+MSFT|2014-03-07 20:19:34|FailedConnectionException "download.finance.yahoo.com" 80
+MSFT|2014-03-07 20:19:37|FailedConnectionException "download.finance.yahoo.com" 80
+MSFT|2014-03-07 20:19:46|ResponseTimeout
+_YHOO|2014-03-07 20:23:10|No matching symbol
+CHINA|2014-03-07 20:25:55|No matching symbol
+AOL|2014-03-07 20:26:02|ResponseTimeout
+AOL|2014-03-07 20:26:11|ResponseTimeout
+[choi@sparta yahooQuote]$ 
 
 
 
