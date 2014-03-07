@@ -45,10 +45,12 @@ yahooQuote options = do
         csv <- fetch (symbol options) (timeoutMilliSec options)
         putStrLn csv
         exitSuccess
-    res <- (fmap (csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
+    res <- (fmap (addSym (symbol options) . csv2map.string2csv) $ fetch (symbol options) (timeoutMilliSec options) )
              `catch` (\e -> return $ errorMsg $ show (e :: SomeException))
     return . encode $ res
-  where errorMsg e = Map.fromList [("Error", e)]
+  where errorMsg e = addSym (symbol options) $ Map.fromList [("Error", e)]
+        -- retain old value of Symbol if present, otherwise insert it
+        addSym sym map = Map.insertWith (\new old -> old) "Symbol" sym map
 
 {-
 
@@ -60,6 +62,8 @@ yahooQuote options = do
     {"Error":"FailedConnectionException \"download.finance.yahoo.com\" 80"}
     {"Error":"ResponseTimeout"}
     {"Error": "StatusCodeException (Status {statusCode = 502, statusMessage = \"Server Hangup\"})
+
+    NOTE: All error maps have additional field of "Symbol" 
 
 -}
 
