@@ -39,4 +39,4 @@ The older monolithic control struction was like
                   Nothing -> cacheResult dbh (symbol options) (encode res) >> disconnect dbh >> return res
             else return res
 
-
+cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)

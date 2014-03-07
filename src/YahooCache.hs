@@ -82,7 +82,17 @@ cachingMode dbh = do
 
 fetchMode :: IConnection c => c -> String -> Maybe Int -> IO ()
 fetchMode dbh sym freshness' = do
-  undefined
+    r <- quickQuery' dbh "select jsonData, timestamp from tickers where ticker = ? and \
+                \ jsonData is not null" [toSql sym]
+    case r of 
+      [[json, timestamp]] -> do
+          let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
+          case xs of 
+              Nothing -> exitFailure
+              Just xs' -> B.putStrLn $ encode $ Map.insert "CACHED" (fromSql timestamp :: String) xs'
+      _ -> exitFailure
+
+
 
 
 {-
@@ -115,29 +125,13 @@ logError dbh sym err = do
     commit dbh
     return ()
 
-cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)
-cachedJson dbh sym = do
-    r <- quickQuery' dbh "select jsonData, timestamp from tickers where ticker = ? and \
-                \ jsonData is not null" [toSql sym]
-    case r of 
-      [[json, timestamp]] -> do
-          let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
-          case xs of 
-              Just xs' -> return $ Map.insert "CACHED" (fromSql timestamp :: String) xs'
-              Nothing -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
-      _ -> return $ Map.fromList [("CACHE ERROR", "No cached data")]
-
-
--- Database
+-- Database creation and connecting
 
 connect :: FilePath -> IO Connection
 connect fp = do
     dbh <- connectSqlite3 fp
     prepDB dbh
     return dbh
-
-
-
 
 prepDB :: IConnection conn => conn -> IO ()
 prepDB dbh = do

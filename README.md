@@ -12,6 +12,12 @@ output from yahooq.
 
 
 ```
+Usage: yahooq-cache [-s|--symbol SYMBOL] [-f|--freshness MIN]
+```
+
+Example:
+
+```
 yahooq YHOO | yahooq-cache
 ```
 
@@ -19,7 +25,7 @@ Cached values can be conditionally retrieved with a bash expression like
 
 
 ```
-yahooq-cache -f YHOO ||  ( yahoo YHOO | yahooq-cache)
+yahooq-cache -f YHOO || (yahoo YHOO | yahooq-cache)
 ```
 
 
