@@ -1,4 +1,4 @@
-module YahooQuote 
+module Main
 where
 import Control.Exception 
 import Text.CSV (parseCSV)
@@ -24,6 +24,8 @@ optionsP = Options
                 long "timeout" <> short 't' <> metavar "MSEC" <> help "Timeout in milliseconds"
               ))
             <*> switch ( long "csv-only" <> help "Dump CSV only" )
+
+main = runCmd 
 
 runCmd :: IO ()
 runCmd = do 
