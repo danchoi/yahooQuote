@@ -13,13 +13,14 @@ Usage: yahooq SYMBOL [-t|--timeout MSEC]
 ```
 yahooq-cache
 
-Usage: yahooq-cache [-s|--symbol SYMBOL] [-f|--freshness SEC]
+Usage: yahooq-cache [-s|--symbol SYMBOL] [-f|--freshness SEC] [-d|--db-path PATH]
   Caching service helper for yahooq
 
 Available options:
   -h,--help                Show this help text
   -s,--symbol SYMBOL       Fetch mode; provide ticker symbol
   -f,--freshness SEC       [fetch mode] minimum cached age in seconds
+  -d,--db-path PATH        path to sqlite3 db. Default: tickers.db 
 ```
 
 In pipeline downstream, `yahooq-cache` acts like `tee` and caches any output

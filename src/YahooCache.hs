@@ -29,6 +29,7 @@ import Control.Monad (when)
 data Options = Options {
     cacheFetch :: Maybe String  -- ticker symbol; also puts in fetch mode
   , freshness :: Maybe Int      -- minimum cached age seconds
+  , dbPath :: String
 } deriving (Show)
 
 optionsP :: Parser Options
@@ -41,6 +42,9 @@ optionsP = Options
       ( long "freshness" <> short 'f' 
         <> metavar "SEC" <> help "[fetch mode] minimum cached age in seconds")
       )
+    <*> (strOption 
+      ( long "db-path" <> short 'd' <> metavar "PATH" <> help "path to sqlite3 db. Default: tickers.db" <> value "tickers.db") 
+      )
 
 opts = info (helper <*> optionsP)
           ( fullDesc 
@@ -51,10 +55,10 @@ opts = info (helper <*> optionsP)
 main :: IO ()
 main = do 
     options <- execParser opts 
-    dbh <- connect "tickers.db" 
+    dbh <- connect (dbPath options)
     case options of 
-      (Options Nothing _) -> cachingMode dbh 
-      (Options (Just sym) freshness') -> fetchMode dbh sym freshness'
+      (Options Nothing _ _) -> cachingMode dbh 
+      (Options (Just sym) freshness' _) -> fetchMode dbh sym freshness'
     disconnect dbh
 
 
