@@ -36,9 +36,6 @@ main = do
             <> header "yahooq - Yahoo financial info"
           )
 
-
-    -- res is a Map
-
 yahooQuote :: Options -> IO B.ByteString
 yahooQuote options = do
     when (csvOnly options) $ do
