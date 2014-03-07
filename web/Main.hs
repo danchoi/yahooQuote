@@ -5,7 +5,8 @@ import           Control.Monad.IO.Class (liftIO)
 import           Snap.Core
 import           Snap.Http.Server
 import qualified Data.ByteString.Char8 as B
-import YahooQuote
+import System.Process
+import Control.Monad (join)
 
 main :: IO ()
 main = quickHttpServe site
@@ -24,11 +25,13 @@ yahooHandler :: Snap ()
 yahooHandler = do
     param <- getParam "sym"
     timeout' <- getParam "timeout"
-    let timeout = maybe (Just 200) (fmap fst . B.readInt) timeout'
+    let timeout :: Int
+        timeout = maybe (2000 :: Int) id (join . fmap (fmap fst . B.readInt) $ timeout')
     maybe (writeBS help)
           (\sym -> do 
-              resp <- liftIO $ yahooQuote (Options (B.unpack sym) timeout False) 
-              writeLBS resp) 
+              resp <- liftIO $ 
+                  readProcess "yahooq" [B.unpack sym, "-t", show timeout] []
+              writeBS $ B.pack resp) 
           param
 
 
