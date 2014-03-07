@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import System.Exit
-import Control.Monad (when)
+import Control.Monad
 
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
@@ -59,7 +59,11 @@ main = do
     dbh <- connect (dbPath options)
     case options of 
       (Options Nothing _ _) -> cachingMode dbh 
-      (Options (Just sym) freshness' _) -> fetchMode dbh sym freshness'
+      (Options (Just sym) freshness' _) -> do
+          -- This will exit 0 if the symbol has a No matching symbol error in the errors table.
+          -- THis may be more properly structured as some kind of MonadPlus
+          badSymbol dbh sym 
+          fetchMode dbh sym freshness'
     disconnect dbh
 
 
@@ -79,9 +83,22 @@ cachingMode dbh = do
           Nothing -> cacheResult dbh sym raw 
 
 
+-- badSymbol will output error json if the Symbol has previouly returned a "No
+-- matching symbol" error from the live API.
+
+badSymbol :: IConnection c => c -> String -> IO ()
+badSymbol dbh sym = do
+    r <- quickQuery' dbh 
+          "select count(*) from errors where error = 'No matching symbol' and ticker = ?"
+          [ toSql sym ]
+    case r of
+        [[ct]] | (fromSql ct :: Int) > 0 -> do
+            putStrLn "{Error:\"No matching symbol\"}" 
+            exitSuccess
+        otherwise -> return ()
+
 -- fetchMode looks up the symbol in the cache database and returns the JSON if
 -- it exists, otherwise exits with exit code 1
-
 
 fetchMode :: IConnection c => c -> String -> Maybe Int -> IO ()
 fetchMode dbh sym freshness' = do
