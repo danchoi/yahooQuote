@@ -53,29 +53,38 @@ opts = info (helper <*> optionsP)
 main :: IO ()
 main = do 
     options <- execParser opts 
+    dbh <- connect "tickers.db" 
     case options of 
-      (Options Nothing _) -> cachingMode 
-      (Options (Just sym) freshness') -> fetchMode sym freshness'
+      (Options Nothing _) -> cachingMode dbh 
+      (Options (Just sym) freshness') -> fetchMode dbh sym freshness'
+    disconnect dbh
 
 
 -- cachingMode expects JSON on stdin and stores either the error or the Yahoo ticker data
 -- in the database
 
-cachingMode :: IO ()
-cachingMode = do
+cachingMode :: IConnection c => c -> IO ()
+cachingMode dbh = do
     raw <- B.getContents
     B.putStrLn raw -- pass through input to stdout
     let msg = maybe Map.empty id (decode raw :: Maybe (Map.Map String String))
-    dbh <- connect "tickers.db" 
     case Map.lookup "Symbol" msg of
-      Nothing -> error "Missing Symbol value in input data"
+      Nothing -> error "Missing Symbol value in input data" 
       Just sym -> 
         case Map.lookup "Error" msg of
-          Just errorMsg -> logError dbh sym errorMsg
-          Nothing -> cacheResult dbh sym raw
+          Just errorMsg -> logError dbh sym errorMsg 
+          Nothing -> cacheResult dbh sym raw 
 
-fetchMode :: String -> Maybe Int -> IO ()
-fetchMode = undefined
+
+-- fetchMode looks up the symbol in the cache database and returns the JSON if
+-- it exists, otherwise exits with exit code 1
+
+
+fetchMode :: IConnection c => c -> String -> Maybe Int -> IO ()
+fetchMode dbh sym freshness' = do
+  undefined
+
+
 {-
               case (Map.lookup "Error" res) of
                   Just "No matching symbol" -> disconnect dbh >> return res
