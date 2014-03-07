@@ -32,37 +32,19 @@ executable yahooq
   default-language:    Haskell2010
 
 
--- executable yahooq-cacher
---                       HDBC,
---                       HDBC-sqlite3,
+executable yahooq-cache
+  main-is: YahooCache.hs
+  build-depends: 
+          HDBC, 
+          HDBC-sqlite3,
+          base >4 && <5,
+          bytestring,
+          optparse-applicative,
+          text,
+          aeson,
+          bytestring,
+          containers
+  hs-source-dirs: src
+  default-language: Haskell2010
 
-executable yahooq-web
-  main-is:             Main.hs            
-  -- other-modules:       
-  -- other-extensions:    
-  build-depends:       base >=4.6 && <4.7,
-                       csv,
-                       aeson,
-                       http-conduit,
-                       bytestring,
-                       containers,
-                       optparse-applicative,
-                       HDBC,
-                       HDBC-sqlite3,
-                       base                      >= 4     && < 5,
-                       bytestring                >= 0.9.1 && < 0.11,
-                       MonadCatchIO-transformers >= 0.2.1 && < 0.4,
-                       transformers,
-                       mtl                       >= 2     && < 3,
-                       snap-core                 >= 0.9   && < 0.11,
-                       snap-server               >= 0.9   && < 0.11
-
-  if impl(ghc >= 6.12.0)
-    ghc-options: -threaded -Wall -fwarn-tabs -funbox-strict-fields -O2
-                 -fno-warn-unused-do-bind
-  else
-    ghc-options: -threaded -Wall -fwarn-tabs -funbox-strict-fields -O2
-
-  hs-source-dirs:      web,src
-  default-language:    Haskell2010
 

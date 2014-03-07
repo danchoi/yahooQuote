@@ -1,6 +1,12 @@
-module YahooCache
+module Main
 where
-
+import Options.Applicative
+import Database.HDBC
+import Database.HDBC.Sqlite3
+import Data.Aeson
+import Data.Text (Text)
+import qualified Data.Map as Map
+import qualified Data.ByteString.Lazy.Char8 as B
 
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
@@ -14,15 +20,55 @@ where
     yahooq-cache [sym] --since MIN || yahooq sym
 
   Will retrive the cached JSON for SYM if it exists and is more recent than MIN and
-  otherwise run `yahooq sym`
-
-
+  otherwise returns exit status 1 and triggers `yahooq sym` 
 
 -}
 
-import Database.HDBC
-import Database.HDBC.Sqlite3
+data Options = Options {
+    cacheFetch :: Maybe String  -- ticker symbol; also puts in fetch mode
+  , freshness :: Maybe Int      -- fetch if cached data is newer than N minutes
+} deriving (Show)
 
+optionsP :: Parser Options
+optionsP = Options 
+    <$> (optional $ strOption 
+      (long "symbol" <> short 's' <> metavar "SYMBOL" <> help "Fetch mode; provide ticker symbol")
+      )
+    <*> (optional $ option 
+      (long "freshness" <> short 'f' <> metavar "MIN" <> help "[fetch mode] fetch from cache if under MIN minutes old")
+      )
+
+opts = info (helper <*> optionsP)
+          ( fullDesc 
+            <> progDesc "Caching service helper for yahooq"
+            <> header "yahooq-cache"
+          )
+
+
+main :: IO ()
+main = do 
+    options <- execParser opts 
+    print options
+    case options of 
+      (Options Nothing _) -> cachingMode 
+      (Options (Just sym) freshness') -> fetchMode sym freshness'
+
+
+-- cachingMode expects JSON on stdin and stores either the error or the Yahoo ticker data
+-- in the database
+
+cachingMode :: IO ()
+cachingMode = do
+    raw <- B.getContents
+    B.putStrLn raw
+    let json = decode raw :: Maybe (Map.Map String String)
+    print json
+
+fetchMode :: String -> Maybe Int -> IO ()
+fetchMode = undefined
+
+
+{-
 
     res' <- if (sqliteCache options) 
             then do
@@ -105,3 +151,4 @@ prepDB dbh = do
     commit dbh
 
 
+-}
