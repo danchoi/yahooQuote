@@ -33,7 +33,7 @@ But `yahooq-cache` can also substitute relatively fresh cached data for live
 data from `yahooq` when used in a short-cutting bash expression like this:
 
 ```
-yahooq-cache -f YHOO -f 60 || (yahoo YHOO | yahooq-cache)
+yahooq-cache -s YHOO -f 60 || (yahoo YHOO | yahooq-cache)
 ```
 
 
