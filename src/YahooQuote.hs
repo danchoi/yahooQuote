@@ -25,10 +25,8 @@ optionsP = Options
               ))
             <*> switch ( long "csv-only" <> help "Dump CSV only" )
 
-main = runCmd 
-
-runCmd :: IO ()
-runCmd = do 
+main :: IO ()
+main = do 
     options <- execParser opts 
     json' <- yahooQuote options 
     B.putStrLn json'
