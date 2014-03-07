@@ -10,7 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import System.Exit
 import Control.Monad (when)
-
+import System.Time
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
   pipeline or after it, or both.
@@ -85,6 +85,7 @@ fetchMode dbh sym freshness' = do
                 \ jsonData is not null" [toSql sym]
     case r of 
       [[json, timestamp]] -> do
+          print (fromSql timestamp :: ClockTime)
           let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
           case xs of 
               Nothing -> exitFailure
@@ -96,7 +97,6 @@ cacheResult dbh sym json' = do
     run dbh
         "INSERT OR REPLACE INTO tickers (ticker, jsonData) VALUES (?, ?)"
         [toSql sym, toSql json']
-
     commit dbh
     return ()
  

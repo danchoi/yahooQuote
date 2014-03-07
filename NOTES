@@ -40,3 +40,21 @@ The older monolithic control struction was like
             else return res
 
 cachedJson :: IConnection c => c -> String -> IO (Map.Map String String)
+
+
+
+------------------------------------------------------------------------
+
+Converting sqlite3 time text is not obvious
+
+  print (fromSql timestamp :: ClockTime)
+
+produces error:
+
+  yahooq-cache: Convertible: error converting source data SqlString "2014-03-07 17:21:42" of type SqlValue to type Integer: Cannot read source value as dest type
+
+
+In sqlite3 db, the timestamp column stores text like 2014-03-07 17:21:42
+
+
+
