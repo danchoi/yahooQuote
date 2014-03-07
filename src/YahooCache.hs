@@ -89,11 +89,11 @@ cachingMode dbh = do
 badSymbol :: IConnection c => c -> String -> IO ()
 badSymbol dbh sym = do
     r <- quickQuery' dbh 
-          "select count(*) from errors where error = 'No matching symbol' and ticker = ?"
+          "select count(*), max(timestamp) as t from errors where error = 'No matching symbol' and ticker = ?"
           [ toSql sym ]
     case r of
-        [[ct]] | (fromSql ct :: Int) > 0 -> do
-            putStrLn "{Error:\"No matching symbol\"}" 
+        [[ct, t]] | (fromSql ct :: Int) > 0 -> do
+            putStrLn $ "{Error:\"No matching symbol\",\"CACHED\":\"" ++ (fromSql t) ++ "\"}" 
             exitSuccess
         otherwise -> return ()
 
