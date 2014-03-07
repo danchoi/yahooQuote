@@ -72,7 +72,7 @@ cachingMode dbh = do
     B.putStrLn raw -- pass through input to stdout
     let msg = maybe Map.empty id (decode raw :: Maybe (Map.Map String String))
     case Map.lookup "Symbol" msg of
-      Nothing -> error "Missing Symbol value in input data" 
+      Nothing -> error $ "Missing Symbol value in input data: " ++ B.unpack raw 
       Just sym -> 
         case Map.lookup "Error" msg of
           Just errorMsg -> logError dbh sym errorMsg 

@@ -1,0 +1,5 @@
+#!/bin/bash
+sym=$1
+timeout=${2:-1000}
+freshsec=${3:-3600} # freshness in seconds
+yahooq-cache -f $freshsec  -s $sym || (yahooq $sym -t $timeout | yahooq-cache) 

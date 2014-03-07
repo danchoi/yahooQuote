@@ -30,7 +30,7 @@ yahooHandler = do
     maybe (writeBS help)
           (\sym -> do 
               resp <- liftIO $ 
-                  readProcess "yahooq" [B.unpack sym, "-t", show timeout] []
+                  readProcess "yahooq-wrapper" [B.unpack sym, show timeout] []
               writeBS $ B.pack resp) 
           param
 
