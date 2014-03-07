@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
+import System.Exit
 import Control.Monad (when)
 
 {-
@@ -34,10 +35,12 @@ data Options = Options {
 optionsP :: Parser Options
 optionsP = Options 
     <$> (optional $ strOption 
-      (long "symbol" <> short 's' <> metavar "SYMBOL" <> help "Fetch mode; provide ticker symbol")
+      ( long "symbol" <> short 's' 
+        <> metavar "SYMBOL" <> help "Fetch mode; provide ticker symbol")
       )
     <*> (optional $ option 
-      (long "freshness" <> short 'f' <> metavar "MIN" <> help "[fetch mode] fetch from cache if under MIN minutes old")
+      ( long "freshness" <> short 'f' 
+        <> metavar "MIN" <> help "[fetch mode] fetch from cache if under MIN minutes old")
       )
 
 opts = info (helper <*> optionsP)
