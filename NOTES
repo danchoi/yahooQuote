@@ -19,3 +19,24 @@ TODO
 
 
 'Symbol', 'Name', 'Last Trade (Price Only)', 'Market Capitalization', '52-week Range', 'Volume', 'P/E Ratio', 'EPS Estimate Current Year', 'EPS Estimate Next Year', 'Price/EPS Estimate Current Year', 'Price/EPS Estimate Next Year'])
+
+
+------------------------------------------------------------------------
+
+The older monolithic control struction was like 
+
+    res' <- if (sqliteCache options) 
+            then do
+              dbh <- connect "tickers.db"
+              case (Map.lookup "Error" res) of
+                  Just "No matching symbol" -> disconnect dbh >> return res
+                  Just err -> do 
+                      cachedData <- cachedJson dbh (symbol options) 
+                      logError dbh (symbol options) err 
+                      let res'' = Map.union res cachedData
+                      disconnect dbh
+                      return res''
+                  Nothing -> cacheResult dbh (symbol options) (encode res) >> disconnect dbh >> return res
+            else return res
+
+
