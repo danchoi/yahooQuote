@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import System.Exit
 import Control.Monad (when)
+
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
   pipeline or after it, or both.
