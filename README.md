@@ -33,6 +33,8 @@ mysqlPort = 3306
 mysqlUnixSocket = "/tmp/mysql.sock"
 ```
 
+Then create the database with the `create.sql` script.
+
 
 `yahooq-cache` can be put in the pipeline in two ways. 
 
