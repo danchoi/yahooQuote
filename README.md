@@ -7,8 +7,6 @@ Usage: yahooq SYMBOL [-t|--timeout MSEC]
 ```
 
 
-`yahooq-cache` can be put in the pipeline in two ways. 
-
 
 ```
 yahooq-cache
@@ -35,6 +33,8 @@ mysqlPort = 3306
 mysqlUnixSocket = "/tmp/mysql.sock"
 ```
 
+
+`yahooq-cache` can be put in the pipeline in two ways. 
 
 In pipeline downstream, `yahooq-cache` acts like `tee` and caches any output
 from yahooq while copying the text stream through to STDOUT. Example:
