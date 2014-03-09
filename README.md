@@ -75,6 +75,6 @@ environment variable for the webserver process.
 
 ### Building
 
-The code requires the HEAD of HBDC-mysql from the repo on github, not
-the version in Hackage. Clone the repo and then `cabal sandbox add-source
-[path]`. 
+The code requires the HEAD of HBDC-mysql from the repo on github, not the
+version in Hackage. Clone the repo from `git@github.com:bos/hdbc-mysql.git` and
+then `cabal sandbox add-source [path]`. 
