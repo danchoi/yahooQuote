@@ -1,0 +1,6 @@
+mysqlHost = "localhost"
+mysqlUser = "root"
+mysqlDatabase = "tickers"
+mysqlPassword = ""
+mysqlPort = 3306
+mysqlUnixSocket = "/tmp/mysql.sock"
