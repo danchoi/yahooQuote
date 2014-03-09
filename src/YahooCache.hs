@@ -1,8 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main
 where
 import Options.Applicative
 import Database.HDBC
-import Database.HDBC.Sqlite3
+import Database.HDBC.MySQL
 import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Map as Map
@@ -10,6 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import System.IO
 import System.Exit
 import Control.Monad
+import Data.Configurator
 
 {-
   This program acts as a cache for yahooq. Put it in front of yahooq in a
@@ -44,7 +46,8 @@ optionsP = Options
         <> metavar "SEC" <> help "[fetch mode] minimum cached age in seconds")
       )
     <*> (strOption 
-      ( long "db-path" <> short 'd' <> metavar "PATH" <> help "path to sqlite3 db. Default: tickers.db" <> value "tickers.db") 
+      ( long "dbconf" <> short 'd' <> metavar "PATH" <> help "path to MySQL db configuration. Default is yahooq.cfg" 
+        <> value "yahooq.cfg") 
       )
 
 opts = info (helper <*> optionsP)
@@ -56,7 +59,22 @@ opts = info (helper <*> optionsP)
 main :: IO ()
 main = do 
     options <- execParser opts 
-    dbh <- connect (dbPath options)
+    config <- load [ Required $ dbPath options ]
+    host' <- lookupDefault "localhost" config "mysqlHost" :: IO String
+    user' <- lookupDefault "root" config "mysqlUser" :: IO String
+    pass' <- lookupDefault "" config "mysqlPassword" :: IO String
+    port' <- lookupDefault 3306 config "mysqlPort" :: IO Int
+    sock' <- lookupDefault "" config "mysqlUnixSocket" :: IO String
+    db' <- lookupDefault "tickers" config "mysqlDatabase" :: IO String
+
+    let conf = defaultMySQLConnectInfo { 
+                  mysqlHost = host',
+                  mysqlUser = user', 
+                  mysqlDatabase = db',
+                  mysqlPort = port', 
+                  mysqlUnixSocket = sock'
+                }
+    dbh <- connect conf
     case options of 
       (Options Nothing _ _) -> cachingMode dbh 
       (Options (Just sym) freshness' _) -> do
@@ -65,7 +83,6 @@ main = do
           badSymbol dbh sym 
           fetchMode dbh sym freshness'
     disconnect dbh
-
 
 -- cachingMode expects JSON on stdin and stores either the error or the Yahoo ticker data
 -- in the database
@@ -103,16 +120,14 @@ badSymbol dbh sym = do
 fetchMode :: IConnection c => c -> String -> Maybe Int -> IO ()
 fetchMode dbh sym freshness' = do
     -- freshness is in seconds (not minutes so testing is easier)
-    let freshness = maybe (60 * 100) id freshness'
+    let freshnessInSec = maybe (60 * 100) id freshness'
     r <- quickQuery' dbh 
           "select jsonData, timestamp, \
-          \ strftime('%s','now') - strftime('%s', timestamp) as diffSeconds \
+          \ UNIX_TIMESTAMP(CURRENT_TIMESTAMP) - UNIX_TIMESTAMP(timestamp) as diffSeconds \
           \ from tickers where ticker = ? and \
           \ jsonData is not null \
-          \ and (timestamp > datetime('now', ?) = 1)" 
-          [ toSql sym, 
-            toSql $ "-" ++ show freshness ++ " seconds"
-          ]
+          \ and timestamp > DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ? SECOND)"
+          [ toSql sym, toSql freshnessInSec ]
     case r of 
       [[json, timestamp, diffSeconds]] -> do
         let xs = ((decode $ fromSql json) :: Maybe (Map.Map String String))
@@ -127,7 +142,7 @@ fetchMode dbh sym freshness' = do
 cacheResult :: IConnection c => c -> String -> B.ByteString -> IO ()
 cacheResult dbh sym json' = do
     run dbh
-        "INSERT OR REPLACE INTO tickers (ticker, jsonData) VALUES (?, ?)"
+        "REPLACE INTO tickers (ticker, jsonData) VALUES (?, ?)"
         [toSql sym, toSql json']
     commit dbh
     return ()
@@ -142,34 +157,9 @@ logError dbh sym err = do
 
 -- Database creation and connecting
 
-connect :: FilePath -> IO Connection
-connect fp = do
-    dbh <- connectSqlite3 fp
-    prepDB dbh
+connect :: MySQLConnectInfo -> IO Connection
+connect conf = do
+    dbh <- connectMySQL conf 
     return dbh
 
-prepDB :: IConnection conn => conn -> IO ()
-prepDB dbh = do
-    tables <- getTables dbh
-    when (not ("tickers" `elem` tables)) $ do
-        hPutStrLn stderr "Creating tickers database"
-        run dbh
-            "CREATE table tickers ( \
-            \ ticker TEXT NOT NULL UNIQUE, \
-            \ jsonData TEXT, \
-            \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP \
-            \)" []
-        commit dbh
-        return ()
-    when (not ("errors" `elem` tables)) $ do
-        hPutStrLn stderr "Creating errors database"
-        run dbh
-            "CREATE table errors ( \
-            \ ticker TEXT NOT NULL, \
-            \ timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \
-            \ error  TEXT \
-            \)" []
-        commit dbh
-        return ()
-    commit dbh
-
+-- Remember to create table with create.sql

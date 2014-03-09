@@ -13,15 +13,28 @@ Usage: yahooq SYMBOL [-t|--timeout MSEC]
 ```
 yahooq-cache
 
-Usage: yahooq-cache [-s|--symbol SYMBOL] [-f|--freshness SEC] [-d|--db-path PATH]
+Usage: yahooq-cache [-s|--symbol SYMBOL] [-f|--freshness SEC] [-d|--dbconf PATH]
   Caching service helper for yahooq
 
 Available options:
   -h,--help                Show this help text
   -s,--symbol SYMBOL       Fetch mode; provide ticker symbol
   -f,--freshness SEC       [fetch mode] minimum cached age in seconds
-  -d,--db-path PATH        path to sqlite3 db. Default: tickers.db 
+  -d,--dbconf PATH         path to MySQL db configuration. Default is yahooq.cfg
 ```
+
+To use yahooq-cache you must create a MySQL database and put the
+database configuration in `yahooq.cfg`. Example configuration:
+
+```
+mysqlHost = "localhost"
+mysqlUser = "root"
+mysqlDatabase = "tickers"
+mysqlPassword = ""
+mysqlPort = 3306
+mysqlUnixSocket = "/tmp/mysql.sock"
+```
+
 
 In pipeline downstream, `yahooq-cache` acts like `tee` and caches any output
 from yahooq while copying the text stream through to STDOUT. Example:
@@ -38,11 +51,10 @@ yahooq-cache -s YHOO -f 60 || (yahoo YHOO | yahooq-cache)
 ```
 
 
-If data is returned from the sqlite3 cache, the JSON is augmented by extra
+If data is returned from the MySQL cache, the JSON is augmented by extra
 values for CACHED and CACHED-AGE-SECONDS; e.g., 
 
     {..."CACHED":"2014-03-07 17:21:42","CACHED-AGE-SECONDS":"2111",...}
-
 
 
 
@@ -60,3 +72,9 @@ environment variable for the webserver process.
 
 
 
+
+### Building
+
+The code requires the HEAD of HBDC-mysql from the repo on github, not
+the version in Hackage. Clone the repo and then `cabal sandbox add-source
+[path]`. 

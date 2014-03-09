@@ -13,7 +13,7 @@ maintainer:          dhchoi@gmail.com
 category:            Web
 build-type:          Simple
 -- extra-source-files:  
-cabal-version:       >=1.10
+cabal-version:       >=1.10 
 
 executable yahooq
   main-is:             YahooQuote.hs            
@@ -36,7 +36,8 @@ executable yahooq-cache
   main-is: YahooCache.hs
   build-depends: 
           HDBC, 
-          HDBC-sqlite3,
+          HDBC-mysql,
+          configurator,
           base >4 && <5,
           bytestring,
           optparse-applicative,
