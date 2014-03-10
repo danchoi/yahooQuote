@@ -71,6 +71,7 @@ main = do
                   mysqlHost = host',
                   mysqlUser = user', 
                   mysqlDatabase = db',
+                  mysqlPassword = pass',
                   mysqlPort = port', 
                   mysqlUnixSocket = sock'
                 }
