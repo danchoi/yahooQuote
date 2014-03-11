@@ -88,7 +88,7 @@ url sym = "http://download.finance.yahoo.com/d/quotes.csv?s=" ++ sym ++ "&f=" ++
 
 codes' :: [(String, String)]
 codes' = [(k, v) | (k, v) <- codes, k `elem` usedFields]
-  where usedFields = ["Symbol", "Name", "Last Trade (Price Only)", "Market Capitalization", "52-week Range", "Volume", "P/E Ratio", "EPS Estimate Current Year", "EPS Estimate Next Year", "Price/EPS Estimate Current Year", "Price/EPS Estimate Next Year", "Previous Close", "Open", "Bid", "Error Indication (returned for symbol changed / invalid)", "Dividend Yield", "EPS Estiamte Next Year", "EPS Estimate Current Year"]
+  where usedFields = ["Symbol", "Name", "Last Trade (Price Only)", "Market Capitalization", "52-week Range", "Volume", "P/E Ratio", "EPS Estimate Current Year", "EPS Estimate Next Year", "Price/EPS Estimate Current Year", "Price/EPS Estimate Next Year", "Previous Close", "Open", "Bid", "Error Indication (returned for symbol changed / invalid)", "Dividend Yield", "EPS Estiamte Next Year", "EPS Estimate Current Year", "Revenue"]
       
 -- Yahoo stock ticker field codes
 
@@ -135,6 +135,7 @@ codes = [
         ("Dividend Yield", "y"),
         ("Dividend/Share", "d"),
         ("EBITDA", "j4"),
+        ("Revenue", "s6"),
         ("EPS Estimate Current Year", "e7"),
         ("EPS Estimate Next Quarter", "e9"),
         ("EPS Estimate Next Year", "e8"),
